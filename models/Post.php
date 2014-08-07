@@ -249,4 +249,37 @@ class Post extends BaseModel
 	{
 		return ['post_title', 'post_content', 'post_excerpt'];
 	}
+	
+	/**
+	 * Find a specific model by a given meta property value.
+	 *
+	 * @param  string $property
+	 * @param  string $value
+	 * @return false|self
+	 */
+	public static function find_one_by_meta($property, $value)
+	{
+		global $wpdb;
+
+		// Escape the value
+		$value = esc_sql($value);
+
+		// Get the table name
+		$table = static::get_table();
+		
+		$meta_subquery = " (
+			SELECT post_id
+			FROM `".$wpdb->postmeta."`
+			WHERE (
+				meta_key = '".$property."'
+				AND meta_value = '".esc_sql($value)."'
+			)
+		) ";
+
+		// Get the item
+		$obj = $wpdb->get_row("SELECT * FROM `{$table}` WHERE `ID` = ".$meta_subquery, ARRAY_A);
+
+		// Return false if no item was found, or a new model
+		return ($obj ? static::create($obj) : false);
+	}
 }
