@@ -313,6 +313,29 @@ class Query
 
 		return $this;
 	}
+	
+	/**
+	* Add meta clause to the search query.
+	*
+	* @param string $column
+	* @param string $value
+	* @return self
+	*/
+	public function where_meta($column, $value)
+	{
+		global $wpdb;
+		$meta_subquery = " (
+			SELECT post_id
+			FROM `".$wpdb->postmeta."`
+			WHERE (
+				meta_key = '".$column."'
+				AND meta_value = '".esc_sql($value)."'
+			)
+		) ";
+		
+		$this->where[] = ['type' => 'in', 'column' => 'ID', 'value' => $meta_subquery];
+		return $this;
+	}
 
 	/**
 	 * Get models where any of the designated fields match the given value.
@@ -409,13 +432,20 @@ class Query
 
 			// where_in
 			elseif ($q['type'] == 'in') {
-				$where .= ' AND `' . $q['column'] . '` IN (';
-
-				foreach ($q['value'] as $value) {
-					$where .= '"' . esc_sql($value) . '",';
+				
+				if (is_array($q['value'])) {
+					
+					$where .= ' AND `' . $q['column'] . '` IN (';
+					foreach ($q['value'] as $value) {
+						$where .= '"' . esc_sql($value) . '",';
+					}
+					$where = substr($where, 0, -1) . ')';
+					
 				}
-
-				$where = substr($where, 0, -1) . ')';
+				else {
+					$where .= ' AND `' . $q['column'] . '` IN (' . $q['value'] . ')';
+				}
+				
 			}
 
 			// where_not_in
