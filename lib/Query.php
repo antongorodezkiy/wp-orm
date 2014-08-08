@@ -519,4 +519,40 @@ class Query
 
 		return $results;
 	}
+	
+	
+	/**
+	* Add meta clause of posts2posts connected posts to the search query.
+	*
+	* @param string $connection_type
+	* @param string $column
+	* @param string $value
+	* @return self
+	*/
+	public function where_p2p_meta($connection_type, $column, $value)
+	{
+		global $wpdb;
+		
+		$meta_subquery = " (
+			SELECT post_id
+			FROM `".$wpdb->postmeta."`
+			WHERE (
+				meta_key = '".$column."'
+				AND meta_value = '".esc_sql($value)."'
+			)
+		) ";
+		
+		$p2p_subquery = " (
+			SELECT p2p_from
+			FROM `".$wpdb->p2p."`
+			WHERE (
+				p2p_type = '".$connection_type."'
+				AND p2p_to IN (".$meta_subquery.")
+			)
+		) ";
+		
+		$this->where[] = ['type' => 'in', 'column' => 'ID', 'value' => $p2p_subquery];
+		
+		return $this;
+	}
 }
